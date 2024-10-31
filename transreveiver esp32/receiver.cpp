@@ -1,36 +1,37 @@
 #include <esp_now.h>
 #include <WiFi.h>
 
-const int ledPin = 2;  // GPIO pin connected to the LED
+// Pin where the LED is connected
+const int ledPin = 2;  // GPIO 2 for LED
 
 bool ledState = false;  // Initial LED state
 
-// Updated callback function to match the new esp_now_recv_cb_t signature
-void onDataReceive(const esp_now_recv_info_t *recv_info, const uint8_t *incomingData, int len) {
+// Updated callback function for receiving data with esp_now_recv_info parameter
+void onDataRecv(const esp_now_recv_info *recvInfo, const uint8_t *incomingData, int len) {
     memcpy(&ledState, incomingData, sizeof(ledState));
-
-    // Update LED state based on received data
     digitalWrite(ledPin, ledState ? HIGH : LOW);
-    Serial.printf("LED state received: %s\n", ledState ? "ON" : "OFF");
+    Serial.printf("Received LED state: %s\n", ledState ? "ON" : "OFF");
 }
 
 void setup() {
     Serial.begin(115200);
-
-    pinMode(ledPin, OUTPUT);  // Set LED pin as output
-
     WiFi.mode(WIFI_STA);
+
+    // Configure LED pin as output
+    pinMode(ledPin, OUTPUT);
+    digitalWrite(ledPin, LOW);  // Initial state OFF
+
+    // Initialize ESP-NOW
     if (esp_now_init() != ESP_OK) {
         Serial.println("Error initializing ESP-NOW");
         return;
     }
 
-    // Register callback function for incoming data with the updated function signature
-    esp_now_register_recv_cb(onDataReceive);
-
+    // Register callback function for receiving data
+    esp_now_register_recv_cb(onDataRecv);  // Corrected function signature
     Serial.println("Receiver ready");
 }
 
 void loop() {
-    delay(1000);  // Wait to allow time for receiving data
+    // Nothing needed in loop as data is handled by the onDataRecv callback
 }
